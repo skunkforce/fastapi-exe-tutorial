@@ -24,10 +24,10 @@ jobs:
           echo "Build Date: $BUILD_DATE"
           echo "Commit Hash: $COMMIT_HASH"
 
-          sed -i "s/APP_VERSION = \".*\"/APP_VERSION = \"$TAG_NAME\"/" app/fastapi.py
-          sed -i "s/MAINTAINER = \".*\"/MAINTAINER = \"$MAINTAINER_EMAIL\"/" app/fastapi.py
-          sed -i "s/BUILD_DATE = \".*\"/BUILD_DATE = \"$BUILD_DATE\"/" app/fastapi.py
-          sed -i "s/COMMIT_HASH = \".*\"/COMMIT_HASH = \"$COMMIT_HASH\"/" app/fastapi.py
+          sed -i "s/APP_VERSION = \".*\"/APP_VERSION = \"$TAG_NAME\"/" app/fastapi_app.py
+          sed -i "s/MAINTAINER = \".*\"/MAINTAINER = \"$MAINTAINER_EMAIL\"/" app/fastapi_app.py
+          sed -i "s/BUILD_DATE = \".*\"/BUILD_DATE = \"$BUILD_DATE\"/" app/fastapi_app.py
+          sed -i "s/COMMIT_HASH = \".*\"/COMMIT_HASH = \"$COMMIT_HASH\"/" app/fastapi_app.py
         shell: bash
 
       - name: Set up Python
