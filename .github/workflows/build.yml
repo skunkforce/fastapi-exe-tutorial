@@ -1,0 +1,74 @@
+name: Python CI for Windows
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - name: Update Version in Application
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}          
+          MAINTAINER_EMAIL="${{ github.actor }}@users.noreply.github.com"
+          BUILD_DATE=$(date -u +'%Y-%m-%d')
+          COMMIT_HASH=${{ github.sha }}
+
+          echo "New Tag: $TAG_NAME"
+          echo "Maintainer: $MAINTAINER_EMAIL"
+          echo "Build Date: $BUILD_DATE"
+          echo "Commit Hash: $COMMIT_HASH"
+
+          sed -i "s/APP_VERSION = \".*\"/APP_VERSION = \"$TAG_NAME\"/" app/fastapi.py
+          sed -i "s/MAINTAINER = \".*\"/MAINTAINER = \"$MAINTAINER_EMAIL\"/" app/fastapi.py
+          sed -i "s/BUILD_DATE = \".*\"/BUILD_DATE = \"$BUILD_DATE\"/" app/fastapi.py
+          sed -i "s/COMMIT_HASH = \".*\"/COMMIT_HASH = \"$COMMIT_HASH\"/" app/fastapi.py
+        shell: bash
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11' 
+
+      - name: Install dependencies
+        run: pip install -r requirements.build.txt
+
+      - name: Install requirements
+        run: pip install -r app/requirements.txt
+
+      - name: Build executable
+        run: pyinstaller --name fastapi app/fastapi.py 
+
+      - name: Archive dist folder
+        run: Compress-Archive -Path dist/* -DestinationPath dist.zip
+
+      - name: Upload archived dist folder
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-windows
+          path: dist.zip
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Download dist folder
+        uses: actions/download-artifact@v3
+        with:
+          name: dist-windows
+          path: .
+
+      - uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ github.ref_name }}
+          artifacts: "dist.zip"
