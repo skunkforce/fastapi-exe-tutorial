@@ -42,7 +42,7 @@ jobs:
         run: pip install -r app/requirements.txt
 
       - name: Build executable
-        run: pyinstaller --name fastapi app/fastapi.py 
+        run: pyinstaller --name fastapi_app app/fastapi_app.py 
 
       - name: Archive dist folder
         run: Compress-Archive -Path dist/* -DestinationPath dist.zip
