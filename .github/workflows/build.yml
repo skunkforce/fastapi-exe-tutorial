@@ -1,4 +1,4 @@
-name: Python CI for Windows
+name: Python CI for Multiple OS
 
 on:
   push:
@@ -7,14 +7,19 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+
     steps:
       - name: checkout
         uses: actions/checkout@v3
 
       - name: Update Version in Application
         run: |
-          TAG_NAME=${GITHUB_REF#refs/tags/}          
+          TAG_NAME=${GITHUB_REF#refs/tags/}
           MAINTAINER_EMAIL="${{ github.actor }}@users.noreply.github.com"
           BUILD_DATE=$(date -u +'%Y-%m-%d')
           COMMIT_HASH=${{ github.sha }}
@@ -33,25 +38,29 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11' 
+          python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install -r requirements.build.txt
-
-      - name: Install requirements
-        run: pip install -r app/requirements.txt
+        run: |
+          pip install -r requirements.build.txt
+          pip install -r app/requirements.txt
 
       - name: Build executable
-        run: pyinstaller --name tutorial app/tutorial.py 
+        run: pyinstaller --name tutorial app/tutorial.py --onefile
 
       - name: Archive dist folder
-        run: Compress-Archive -Path dist/* -DestinationPath dist.zip
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            Compress-Archive -Path dist/* -DestinationPath dist.zip
+          else
+            tar -czvf dist.tar.gz dist/
+          fi
 
       - name: Upload archived dist folder
         uses: actions/upload-artifact@v3
         with:
-          name: dist-windows
-          path: dist.zip
+          name: dist-${{ matrix.os }}
+          path: dist*
 
   release:
     runs-on: ubuntu-latest
@@ -62,13 +71,18 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download dist folder
+      - name: Download dist folders
         uses: actions/download-artifact@v3
         with:
-          name: dist-windows
+          name: dist-ubuntu-latest
+          path: .
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: dist-windows-latest
           path: .
 
       - uses: ncipollo/release-action@v1
         with:
           tag: ${{ github.ref_name }}
-          artifacts: "dist.zip"
+          artifacts: "dist-ubuntu-latest.tar.gz, dist-windows-latest.zip"
