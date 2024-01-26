@@ -51,16 +51,18 @@ jobs:
       - name: Archive dist folder
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            Compress-Archive -Path dist/* -DestinationPath dist.zip
+            pwsh -command "Compress-Archive -Path dist/* -DestinationPath dist.zip"
           else
             tar -czvf dist.tar.gz dist/
           fi
+        shell: bash
 
       - name: Upload archived dist folder
         uses: actions/upload-artifact@v3
         with:
           name: dist-${{ matrix.os }}
-          path: dist*
+          path: ${{ matrix.os == 'windows-latest' && 'dist.zip' || 'dist.tar.gz' }}
+
 
   release:
     runs-on: ubuntu-latest
