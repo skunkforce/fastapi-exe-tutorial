@@ -48,20 +48,29 @@ jobs:
       - name: Build executable
         run: pyinstaller --name tutorial app/tutorial.py --onefile
 
-      - name: Archive dist folder
-        run: |
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            Compress-Archive -Path dist/* -DestinationPath dist-windows-latest.zip
-          else
-            tar -czvf dist-ubuntu-latest.tar.gz dist/
-          fi
+      - name: Archive dist folder for Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: Compress-Archive -Path dist/* -DestinationPath dist-windows-latest.zip
         shell: pwsh
 
-      - name: Upload archived dist folder
+      - name: Archive dist folder for Linux
+        if: ${{ matrix.os != 'windows-latest' }}
+        run: tar -czvf dist-ubuntu-latest.tar.gz dist/
+        shell: bash
+
+      - name: upload executable (Linux)
+        if: ${{ matrix.os != 'windows-latest' }}
         uses: actions/upload-artifact@v3
         with:
-          name: dist-${{ matrix.os }}
-          path: ${{ matrix.os == 'windows-latest' && 'dist-windows-latest.zip' || 'dist-ubuntu-latest.tar.gz' }}
+          name: dist-ubuntu-latest
+          path: dist-ubuntu-latest.tar.gz
+
+      - name: upload executable (Windows)
+        if: ${{ matrix.os == 'windows-latest' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-windows-latest
+          path: dist-windows-latest.zip
   
   release:
     runs-on: ubuntu-latest
